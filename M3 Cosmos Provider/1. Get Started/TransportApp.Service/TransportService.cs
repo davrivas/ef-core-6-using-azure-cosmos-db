@@ -31,39 +31,86 @@
 
 using Microsoft.EntityFrameworkCore;
 using TransportApp.Data;
+using TransportApp.Domain;
 
 namespace TransportApp.Service
 {
-  public delegate void WriteLine(string text = "", bool highlight = false, bool isException = false);
+    public delegate void WriteLine(string text = "", bool highlight = false, bool isException = false);
 
-  public class TransportService
-  {
-    #region Setup
-
-    public TransportService(IDbContextFactory<TransportContext> contextFactory, WriteLine writeLine)
+    public class TransportService
     {
-      this.contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
-      this.writeLine = writeLine ?? throw new ArgumentNullException(nameof(writeLine));
+        #region Setup
+
+        public TransportService(IDbContextFactory<TransportContext> contextFactory, WriteLine writeLine)
+        {
+            _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+            _writeLine = writeLine ?? throw new ArgumentNullException(nameof(writeLine));
+        }
+
+        private readonly IDbContextFactory<TransportContext> _contextFactory;
+        private readonly WriteLine _writeLine;
+
+        private async Task RecreateDatabase()
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.EnsureCreatedAsync();
+        }
+
+        #endregion
+
+        public async Task RunSample()
+        {
+            await RecreateDatabase();
+
+            await AddItems();
+        }
+
+        private async Task AddItems()
+        {
+            _writeLine();
+            _writeLine("Adding items...");
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            await context.AddAsync(new Address
+            {
+                AddressId = $"{nameof(Address)}-1",
+                City = "Salt Lake City",
+                State = "Utah",
+                Street = "Course Road",
+                HouseNumber = "1234"
+            });
+
+            await context.AddAsync(new Driver
+            {
+                DriverId = $"{nameof(Driver)}-1",
+                FirstName = "Jurgen",
+                LastName = "Kevelaers",
+                EmploymentBeginUtc = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            await context.AddAsync(new Vehicle
+            {
+                VehicleId = $"{nameof(Vehicle)}-1",
+                Make = "Pluralsight",
+                Model = "Buggy",
+                Year = 2018,
+                LicensePlate = "2GAT123",
+                Mileage = 12800,
+                PassengerSeatCount = 6
+            });
+
+            await context.AddAsync(new Trip
+            {
+                TripId = $"{nameof(Trip)}-1",
+                BeginUtc = new DateTime(DateTime.UtcNow.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EndUtc = new DateTime(DateTime.UtcNow.Year, 2, 1, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            await context.SaveChangesAsync();
+
+            _writeLine("Save successful");
+        }
     }
-
-    private readonly IDbContextFactory<TransportContext> contextFactory;
-    private readonly WriteLine writeLine;
-
-    private async Task RecreateDatabase()
-    {
-      using var context = await contextFactory.CreateDbContextAsync();
-
-      await context.Database.EnsureDeletedAsync();
-      await context.Database.EnsureCreatedAsync();
-    }
-
-    #endregion
-
-    public async Task RunSample()
-    {
-      await RecreateDatabase();
-
-      // TODO
-    }
-  }
 }

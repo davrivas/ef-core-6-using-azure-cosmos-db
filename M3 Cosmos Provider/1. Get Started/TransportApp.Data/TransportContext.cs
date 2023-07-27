@@ -49,24 +49,33 @@ namespace TransportApp.Data
 
     #endregion
 
-    // If you're not using dependency injection to configure the context, 
-    // configure it here:
-
-    //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-    //  optionsBuilder
-    //    .UseCosmos(
-    //      connectionString: cosmosConnectionString,
-    //      databaseName: "TransportDb",
-    //      cosmosOptionsAction: options =>
-    //      {
-    //        options.ConnectionMode(Microsoft.Azure.Cosmos.ConnectionMode.Direct);
-    //        options.MaxRequestsPerTcpConnection(20);
-    //        options.MaxTcpConnectionsPerEndpoint(32);
-    //      });
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-      // TODO
-    }
+        modelBuilder.HasManualThroughput(600);
+
+        //modelBuilder.HasDefaultContainer("AllInOne");
+
+        modelBuilder.Entity<Address>()
+            .Property(a => a.HouseNumber)
+            .ToJsonProperty("StreetHouseNumber");
+
+        modelBuilder.Entity<Address>()
+            .HasNoDiscriminator()
+            .ToContainer(nameof(Address))
+            .HasPartitionKey(address => address.State);
+
+        modelBuilder.Entity<Driver>()
+            .HasNoDiscriminator()
+            .ToContainer(nameof(Driver));
+
+        modelBuilder.Entity<Vehicle>()
+            .HasNoDiscriminator()
+            .ToContainer(nameof(Vehicle))
+            .HasPartitionKey(vehicle => vehicle.Make);
+
+        modelBuilder.Entity<Trip>()
+            .HasNoDiscriminator()
+            .ToContainer(nameof(Trip));
+        }
   }
 }

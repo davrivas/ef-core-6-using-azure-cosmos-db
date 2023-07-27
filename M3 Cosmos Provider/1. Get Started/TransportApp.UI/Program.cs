@@ -73,7 +73,7 @@ services.AddSingleton<TransportApp.Service.WriteLine>((text, highlight, isExcept
   Console.ResetColor();
 });
 
-using var serviceProvider = services.BuildServiceProvider();
+await using var serviceProvider = services.BuildServiceProvider();
 
 var transportService = serviceProvider.GetRequiredService<TransportApp.Service.TransportService>();
 
