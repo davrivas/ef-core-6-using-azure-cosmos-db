@@ -34,48 +34,59 @@ using TransportApp.Domain;
 
 namespace TransportApp.Data
 {
-  public class TransportContext : DbContext
-  {
-    public TransportContext(DbContextOptions<TransportContext> options)
-      : base(options)
-    { }
-
-    #region DbSets
-
-    public DbSet<Driver> Drivers { get; set; }
-    public DbSet<Vehicle> Vehicles { get; set; }
-    public DbSet<Address> Addresses { get; set; }
-    public DbSet<Trip> Trips { get; set; }
-
-    #endregion
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public class TransportContext : DbContext
     {
-        modelBuilder.HasManualThroughput(600);
+        public TransportContext(DbContextOptions<TransportContext> options)
+          : base(options)
+        { }
 
-        //modelBuilder.HasDefaultContainer("AllInOne");
+        #region DbSets
 
-        modelBuilder.Entity<Address>()
-            .Property(a => a.HouseNumber)
-            .ToJsonProperty("StreetHouseNumber");
+        public DbSet<Driver> Drivers { get; set; }
+        public DbSet<Vehicle> Vehicles { get; set; }
+        public DbSet<Address> Addresses { get; set; }
+        public DbSet<Trip> Trips { get; set; }
 
-        modelBuilder.Entity<Address>()
+        #endregion
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.HasManualThroughput(600);
+
+            modelBuilder.Entity<Address>()
+                .Property(a => a.HouseNumber)
+                .ToJsonProperty("StreetHouseNumber");
+
+            // implicit:
+
+            // modelBuilder.Entity<Driver>()
+            //   .OwnsOne(driver => driver.Address);
+
+            // modelBuilder.Entity<Driver>()
+            //   .OwnsMany(driver => driver.Trips);
+
+            modelBuilder.Entity<Address>()
+                .HasNoDiscriminator()
+                .ToContainer(nameof(Address))
+                .HasPartitionKey(address => address.State)
+                .HasKey(address => address.AddressId);
+
+            modelBuilder.Entity<Driver>()
             .HasNoDiscriminator()
-            .ToContainer(nameof(Address))
-            .HasPartitionKey(address => address.State);
+            .ToContainer(nameof(Driver))
+            .HasKey(driver => driver.DriverId);
 
-        modelBuilder.Entity<Driver>()
-            .HasNoDiscriminator()
-            .ToContainer(nameof(Driver));
+            modelBuilder.Entity<Vehicle>()
+                .HasNoDiscriminator()
+                .ToContainer(nameof(Vehicle))
+                .HasPartitionKey(vehicle => vehicle.Make)
+                .HasKey(vehicle => vehicle.VehicleId);
 
-        modelBuilder.Entity<Vehicle>()
-            .HasNoDiscriminator()
-            .ToContainer(nameof(Vehicle))
-            .HasPartitionKey(vehicle => vehicle.Make);
-
-        modelBuilder.Entity<Trip>()
-            .HasNoDiscriminator()
-            .ToContainer(nameof(Trip));
+            modelBuilder.Entity<Trip>()
+                .HasNoDiscriminator()
+                .ToContainer(nameof(Trip))
+                .HasPartitionKey(trip => trip.VehicleId)
+                .HasKey(trip => trip.TripId);
         }
-  }
+    }
 }

@@ -73,6 +73,17 @@ services.AddSingleton<TransportApp.Service.WriteLine>((text, highlight, isExcept
   Console.ResetColor();
 });
 
+services.AddSingleton<TransportApp.Service.WaitForNext>(actionName =>
+{
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine();
+    Console.WriteLine($"Press ENTER to run {actionName}");
+    Console.ReadLine();
+    Console.Clear();
+    Console.WriteLine($"{actionName}:");
+    Console.ResetColor();
+});
+
 await using var serviceProvider = services.BuildServiceProvider();
 
 var transportService = serviceProvider.GetRequiredService<TransportApp.Service.TransportService>();
